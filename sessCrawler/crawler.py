@@ -3,6 +3,7 @@ from selenium.webdriver.support.select import Select
 from selenium.webdriver.common.by import By
 import json
 import re
+import time
 
 
 def arabicToPersian(text):
@@ -84,9 +85,7 @@ def get_course_details():
     return [data['id'], data]
     
 
-PATH = r'/home/amirhosein/chromedriver'
-
-Driver = webdriver.Chrome(PATH)
+Driver = webdriver.Chrome()
 
 all_data = {}
 
@@ -113,19 +112,25 @@ for j in toCrawlIndexes:
 
     listOdd = 'listOdd'
     listEven = 'listEven'
-    lengthOdd = len(Driver.find_elements_by_class_name(listOdd))
+
+    time.sleep(2)
     
+    coursesOdd = Driver.find_elements(By.CLASS_NAME, listOdd)
+    coursesEven = Driver.find_elements(By.CLASS_NAME, listEven)
+    lengthOdd = len(coursesOdd)
+
     for i in range(lengthOdd):
+
         # Odd list
-        coursesOdd = Driver.find_elements_by_class_name(listOdd)
-        
+        coursesOdd = Driver.find_elements(By.CLASS_NAME, listOdd)
+
         coursesOdd[i].click()
         serial, data = get_course_details()
         datas[serial] = data
         Driver.back()
 
         # Even list
-        coursesEven = Driver.find_elements_by_class_name(listEven)
+        coursesEven = Driver.find_elements(By.CLASS_NAME, listEven)
 
         try:
             coursesEven[i].click()
@@ -138,5 +143,6 @@ for j in toCrawlIndexes:
     all_data[all_obj_name[j-1]] = datas
     Driver.back()
 
-with open('data.json', 'w',encoding="utf-8") as f: 
+with open('data.json', 'w', encoding="utf-8") as f:
+    print("saving...")
     json.dump(all_data, f, ensure_ascii=False)
