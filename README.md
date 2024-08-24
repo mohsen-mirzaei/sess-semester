@@ -1,6 +1,6 @@
 # sess-semester
 
-[Online Deploy link](https://sess-semester.herokuapp.com/)
+[Online Deploy link](https://sess-semester1.vercel.app/)
 
 ## Project setup
 ```
