@@ -99,7 +99,7 @@ select_object = Select(select_element)
 all_obj_name = [arabicToPersian(string.text) for string in select_object.options[1:]]
 # select units 
 
-toCrawlIndexes = [1, 2, 3, 4, 6, 88, 89, 9, 10, 12, 18, 41, 74, 77, 78, 92, 68, 17]
+toCrawlIndexes = [1] #[1,9,10,12,18,41,74,77,78,91]
 
 for j in toCrawlIndexes:
     datas = dict()
@@ -107,7 +107,7 @@ for j in toCrawlIndexes:
     select_object = Select(select_element)
     select_object.select_by_index(j)
     Driver.find_element(By.ID,  'edDisplay').click()
-    print("crawling ",select_element, " ... ", j)
+    print("crawling ",select_element, " ...")
     
 
     listOdd = 'listOdd'
@@ -115,10 +115,12 @@ for j in toCrawlIndexes:
 
     time.sleep(2)
     
-    coursesOdd = Driver.find_elements(By.CLASS_NAME, listOdd)
-    coursesEven = Driver.find_elements(By.CLASS_NAME, listEven)
-    lengthOdd = len(coursesOdd)
-    print(lengthOdd, len(coursesEven))
+    courses = Driver.find_elements(By.CLASS_NAME, "ptext").find_elements(By.NAME, "tr")
+    print(len(courses), "*")
+
+#    coursesEven = Driver.find_elements(By.CLASS_NAME, listEven)
+#    lengthOdd = len(coursesOdd)
+#    print(lengthOdd, len(coursesEven))
 
     for i in range(lengthOdd):
 
@@ -139,11 +141,11 @@ for j in toCrawlIndexes:
             datas[serial] = data
             Driver.back()
         except Exception as e:
-            print(e)
+            pass
     
     all_data[all_obj_name[j-1]] = datas
     Driver.back()
 
-with open('data.json', 'w', encoding="utf-8") as f:
+with open('plg_data.json', 'w', encoding="utf-8") as f:
     print("saving...")
     json.dump(all_data, f, ensure_ascii=False)
