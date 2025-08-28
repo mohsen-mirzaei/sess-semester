@@ -48,6 +48,7 @@ def seperateTimeAndPlace(timeAndDate):
 def get_course_details():
     global Driver
     data = dict()
+    time.sleep(1)
 
     data['title'] = arabicToPersian(Driver.find_element(By.ID,  'edName').text)
     data['vahed'] = Driver.find_element(By.ID,  'edTotalUnit').text
