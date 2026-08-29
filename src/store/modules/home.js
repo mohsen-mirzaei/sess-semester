@@ -14,7 +14,7 @@ const state = {
   },
 
   filtersItems: {
-    semesters: ["1404-2"],
+    semesters: ["1405-1"],
     units: [],
     course: [],
     teachersName: [],
