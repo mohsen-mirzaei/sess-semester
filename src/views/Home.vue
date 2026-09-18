@@ -577,14 +577,20 @@
           >
             <div class="results-heading">
               <h2 class="text-center my-4" id="search-h">نتایج جستجو</h2>
-              <v-btn
-                color="primary"
-                class="calendar-export-button"
-                @click="exportCalendar"
-              >
-                <v-icon left>mdi-calendar-export</v-icon>
-                خروجی تقویم
-              </v-btn>
+              <div class="results-heading-actions">
+                <v-btn
+                  color="primary"
+                  class="calendar-export-button"
+                  @click="exportCalendar"
+                >
+                  <v-icon left>mdi-calendar-export</v-icon>
+                  خروجی تقویم
+                </v-btn>
+                <v-btn color="primary" @click="finalsDialogOpen = true">
+                  <v-icon left>mdi-calendar-check</v-icon>
+                  برنامه امتحانات
+                </v-btn>
+              </div>
             </div>
             <!-- Calendar -->
             <div
@@ -673,13 +679,6 @@
 
                   </div>
                 </template>
-                <div class="text-center mt-4">
-                  <v-btn color="primary" @click="finalsDialogOpen = true">
-                    <v-icon left>mdi-calendar-check</v-icon>
-                    امتحانات نهایی دروس انتخاب شده
-                  </v-btn>
-                </div>
-
                 <v-dialog v-model="finalsDialogOpen" max-width="700">
                   <v-card>
                     <v-card-title class="grey lighten-2">
@@ -1511,10 +1510,15 @@ export default {
 .results-heading {
   position: relative;
 }
-.calendar-export-button {
+.results-heading-actions {
   position: absolute;
   top: 0;
   left: 0;
+  display: flex;
+  gap: 0.5rem;
+}
+.calendar-export-button {
+  position: static;
 }
 .calenderShower {
   width: 100%;
@@ -1523,9 +1527,10 @@ export default {
   border-radius: 0.4rem;
 }
 @media screen and (max-width: 768px) {
-  .calendar-export-button {
+  .results-heading-actions {
     position: static;
-    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     margin: 0 auto 1rem;
   }
   .calenderShower {
