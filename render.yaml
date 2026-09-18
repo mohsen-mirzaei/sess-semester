@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: sess-semester
+    runtime: node
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 24.21.0
