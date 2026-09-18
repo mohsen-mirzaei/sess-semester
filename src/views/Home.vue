@@ -546,7 +546,14 @@
             </v-flex>
 
             <v-flex align-self="center" class="text-center ma-2">
-              <h3 class="font-weight-bold white--text">نسخه 0.1.5</h3>
+              <v-btn
+                color="primary"
+                class="navigation-button"
+                :to="{ name: 'AcademicCalendar' }"
+              >
+                <v-icon>mdi-calendar-month</v-icon>
+                تقویم آموزشی
+              </v-btn>
             </v-flex>
           </v-layout>
 
@@ -564,6 +571,17 @@
             >
               <h4 class="font-weight-bold">{{ updateTimeDateText }}</h4>
               <h4 class="font-weight-bold">{{ updateTimeClockText }}</h4>
+            </v-flex>
+
+            <v-flex align-self="center" xs12 class="text-center mt-4">
+              <v-btn
+                color="primary"
+                class="navigation-button"
+                :to="{ name: 'AcademicCalendar' }"
+              >
+                <v-icon>mdi-calendar-month</v-icon>
+                تقویم آموزشی
+              </v-btn>
             </v-flex>
           </v-layout>
         </div>
@@ -824,6 +842,10 @@
           <v-row v-else class="ma-2 pa-4" justify="center">
             <h2 class="text-center">برای نمایش نتایج، فیلتر ها را پر کنید</h2>
           </v-row>
+        </div>
+
+        <div class="home-footer text-center">
+          <div class="version-label">نسخه 0.1.5</div>
         </div>
       </div>
     </v-card>
@@ -1539,6 +1561,20 @@ export default {
 
 .filter-color {
   background-color: #ffffff;
+}
+
+.home-footer {
+  padding: 2rem 1rem 0;
+}
+
+.version-label {
+  margin-top: 0.75rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.navigation-button .v-icon {
+  margin-left: 0.5rem !important;
 }
 
 .mobile-expanded {
