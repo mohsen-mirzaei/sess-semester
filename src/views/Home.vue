@@ -583,7 +583,7 @@
                 @click="exportCalendar"
               >
                 <v-icon left>mdi-calendar-export</v-icon>
-                گوگل
+                خروجی تقویم
               </v-btn>
             </div>
             <!-- Calendar -->
