@@ -925,6 +925,16 @@ export default {
   },
   mounted() {},
   watch: {
+    "filters.semester": function resetSemesterState() {
+      this.filters.unit = [];
+      this.filters.course = [];
+      this.filters.teacherName = [];
+      this.filters.place = [];
+      this.filters.gender = [];
+      this.results = [];
+      this.selectedList = [];
+      this.page = 1;
+    },
     selectedList: function getEvents() {
       const convertDayName = [
         "یکشنبه",

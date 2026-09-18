@@ -8,10 +8,15 @@
 
 <script>
 import { mapFields } from "vuex-map-fields";
-import j from "./data/data.json";
 import "./assets/css/font.css";
 import { teacherNameDivider } from './helpers/teacherName';
 import  { toFarsiNumber} from './helpers/english_to_persian';
+
+const semesterFiles = require.context(
+  "./data",
+  false,
+  /^\.\/data-\d{4}-[12]\.json$/
+);
 
 
 export default {
@@ -21,50 +26,67 @@ export default {
     ...mapFields(["filtersItems", "json", "filters"]),
   },
   mounted() {
-    this.json = j;
+    const semesters = semesterFiles
+      .keys()
+      .map((file) => file.match(/data-(\d{4}-[12])\.json$/)[1])
+      .sort()
+      .reverse();
 
+    this.filtersItems.semesters = semesters.length ? semesters : ["1405-1"];
+    if (!this.filters.semester || !this.filtersItems.semesters.includes(this.filters.semester)) {
+      this.filters.semester = this.filtersItems.semesters[0];
+    }
+    this.loadSemester(this.filters.semester);
+  },
+  watch: {
+    "filters.semester": function loadSelectedSemester(semester) {
+      if (semester && this.filtersItems.semesters.includes(semester)) {
+        this.loadSemester(semester);
+      }
+    },
+  },
+  methods: {
+    loadSemester(semester) {
+      const file = `./data-${semester}.json`;
+      this.json = semesterFiles(file);
+      this.filtersItems.units = [];
+      this.filtersItems.course = [];
+      this.filtersItems.teachersName = [];
+      this.filtersItems.places = [];
+      this.filtersItems.genders = [];
 
-    //initializing filters for search
-      for (let unit in this.json) {
-        
-        for(let course in this.json[unit]){
+      for (const unit in this.json) {
+        for (const course in this.json[unit]) {
+          const item = this.json[unit][course];
+          item.id = course;
+          item.teacher = teacherNameDivider(item.teacher);
+          item.vahed = toFarsiNumber(item.vahed);
+          item.group = toFarsiNumber(item.group);
+          item.time_room = toFarsiNumber(item.time_room);
+          item.unit = item.unit.slice(0, -1).replaceAll("*", "|");
 
-          this.json[unit][course]['id'] = course;
-          this.json[unit][course]['teacher'] = teacherNameDivider(this.json[unit][course]['teacher']);
-          this.json[unit][course]['vahed'] = toFarsiNumber(this.json[unit][course]['vahed']);
-          this.json[unit][course]['group'] = toFarsiNumber(this.json[unit][course]['group']);
-          this.json[unit][course]['time_room'] = toFarsiNumber(this.json[unit][course]['time_room']);
-          this.json[unit][course]['unit'] = this.json[unit][course]['unit'].slice(0,-1);
-          this.json[unit][course]['unit'] = this.json[unit][course]['unit'].replaceAll("*","|");
-
-          for(let index in this.json[unit][course]['seperated_time_and_place']){
-            this.json[unit][course]['seperated_time_and_place'][index].place = toFarsiNumber(this.json[unit][course]['seperated_time_and_place'][index].place);
-          }
-
-          //unit name
-          this.filtersItems.units.push(unit);
-          
-          //course name
-          this.filtersItems.course.push(
-            this.json[unit][course]["title"]
-          );
-
-          //teacher name
-          this.json[unit][course]['teacher'].split(' | ').forEach(str => {
-             this.filtersItems.teachersName.push(str);
+          item.seperated_time_and_place.forEach((place) => {
+            place.place = toFarsiNumber(place.place);
           });
 
-          //gender
-          this.filtersItems.genders.push(this.json[unit][course]['gender']);
-
-          //place name
-          for(let index in this.json[unit][course]['seperated_time_and_place']){
-            let obj = this.json[unit][course]['seperated_time_and_place'][index];
-            this.filtersItems.places.push(obj.place);
-          }
+          this.filtersItems.units.push(unit);
+          this.filtersItems.course.push(item.title);
+          item.teacher.split(" | ").forEach((teacher) => {
+            this.filtersItems.teachersName.push(teacher);
+          });
+          this.filtersItems.genders.push(item.gender);
+          item.seperated_time_and_place.forEach((place) => {
+            this.filtersItems.places.push(place.place);
+          });
         }
-        
       }
+
+      this.filtersItems.units = [...new Set(this.filtersItems.units)];
+      this.filtersItems.course = [...new Set(this.filtersItems.course)];
+      this.filtersItems.teachersName = [...new Set(this.filtersItems.teachersName)];
+      this.filtersItems.places = [...new Set(this.filtersItems.places)];
+      this.filtersItems.genders = [...new Set(this.filtersItems.genders)];
+    },
   },
 };
 </script>
