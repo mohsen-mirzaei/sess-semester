@@ -1106,6 +1106,18 @@ export default {
         timeStart[1] || 0,
       ];
     },
+    hasFinalExamDateAndTime(exam) {
+      const sortValue = this.finalExamSortValue(exam);
+      const hasTime = /^\s*[0-9۰-۹]{1,2}:[0-9۰-۹]{2}\s*-\s*[0-9۰-۹]{1,2}:[0-9۰-۹]{2}\s*$/.test(
+        exam.final_time || ""
+      );
+      return (
+        sortValue[0] > 0 &&
+        sortValue[1] > 0 &&
+        sortValue[2] > 0 &&
+        hasTime
+      );
+    },
     finalExamTimestamp(exam) {
       const sortValue = this.finalExamSortValue(exam);
       const year = sortValue[0];
@@ -1456,7 +1468,13 @@ export default {
       "getGenders",
     ]),
     finalExams() {
-      const sortedExams = this.selectedList.slice().sort((firstExam, secondExam) => {
+      const examsWithFinalData = this.selectedList.filter((exam) =>
+        this.hasFinalExamDateAndTime(exam)
+      );
+      const examsWithoutFinalData = this.selectedList.filter(
+        (exam) => !this.hasFinalExamDateAndTime(exam)
+      );
+      const sortedExams = examsWithFinalData.sort((firstExam, secondExam) => {
         const firstValue = this.finalExamSortValue(firstExam);
         const secondValue = this.finalExamSortValue(secondExam);
         for (let i = 0; i < firstValue.length; i++) {
@@ -1476,7 +1494,12 @@ export default {
                 this.finalExamTimestamp(exam) -
                   this.finalExamTimestamp(sortedExams[index - 1])
               ),
-      }));
+      })).concat(
+        examsWithoutFinalData.map((exam) => ({
+          ...exam,
+          study_gap: "تاریخ نامشخص",
+        }))
+      );
     },
   },
 };
