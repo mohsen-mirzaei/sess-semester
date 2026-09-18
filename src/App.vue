@@ -48,7 +48,9 @@ export default {
   methods: {
     loadSemester(semester) {
       const file = `./data-${semester}.json`;
-      this.json = semesterFiles(file);
+      const loadedData = semesterFiles(file);
+      const semesterData = loadedData.default || loadedData;
+      this.json = JSON.parse(JSON.stringify(semesterData));
       this.filtersItems.units = [];
       this.filtersItems.course = [];
       this.filtersItems.teachersName = [];
