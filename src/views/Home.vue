@@ -803,8 +803,18 @@
               </v-layout>
             </div>
 
-            <div class="text-center pt-2">
+            <div class="pagination-controls text-center pt-2">
               <v-pagination v-model="page" :length="pageCount"></v-pagination>
+              <v-select
+                v-model="itemsPerPage"
+                :items="itemsPerPageOptions"
+                label="تعداد"
+                dense
+                outlined
+                hide-details
+                class="items-per-page-select"
+                @change="page = 1"
+              ></v-select>
             </div>
 
             <v-row v-if="results[0] === -1" class="ma-2 pa-4" justify="center">
@@ -848,6 +858,13 @@ export default {
       page: 1,
       pageCount: 0,
       itemsPerPage: 10,
+      itemsPerPageOptions: [
+        { text: "۱۰", value: 10 },
+        { text: "۲۰", value: 20 },
+        { text: "۵۰", value: 50 },
+        { text: "۱۰۰", value: 100 },
+        { text: "همه", value: -1 },
+      ],
 
       mobileDevice: window.innerWidth < 780,
 
@@ -1574,6 +1591,16 @@ export default {
   flex-direction: row;
 }
 
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+.items-per-page-select {
+  max-width: 110px;
+}
+
 #search-h {
   margin-top: 50px;
 }
@@ -1609,6 +1636,10 @@ export default {
   .exeptNav {
     width: 100%;
     margin-right: auto;
+  }
+
+  .pagination-controls {
+    flex-direction: column;
   }
 }
 
