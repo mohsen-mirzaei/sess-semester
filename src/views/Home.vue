@@ -575,7 +575,17 @@
             v-if="results.length !== 0 && results[0] !== -1"
             :class="mobileDevice ? 'pa-3' : 'pa-6'"
           >
-            <h2 class="text-center my-4" id="search-h">نتایج جستجو</h2>
+            <div class="results-heading">
+              <h2 class="text-center my-4" id="search-h">نتایج جستجو</h2>
+              <v-btn
+                color="primary"
+                class="calendar-export-button"
+                @click="exportCalendar"
+              >
+                <v-icon left>mdi-calendar-export</v-icon>
+                تقویم گوگل
+              </v-btn>
+            </div>
             <!-- Calendar -->
             <div
               v-if="selectedList.length"
@@ -1143,6 +1153,182 @@ export default {
       link.click();
       URL.revokeObjectURL(link.href);
     },
+    escapeCalendarText(value) {
+      return String(value || "")
+        .replace(/\\/g, "\\\\")
+        .replace(/;/g, "\\;")
+        .replace(/,/g, "\\,")
+        .replace(/[\r\n]/g, "\\n");
+    },
+    padCalendarNumber(value) {
+      return String(value).padStart(2, "0");
+    },
+    formatCalendarDate(date, endOfDay = false) {
+      return [
+        date.getFullYear(),
+        this.padCalendarNumber(date.getMonth() + 1),
+        this.padCalendarNumber(date.getDate()),
+      ].join("") + "T" + [
+        endOfDay ? "23" : this.padCalendarNumber(date.getHours()),
+        endOfDay ? "59" : this.padCalendarNumber(date.getMinutes()),
+        endOfDay ? "59" : this.padCalendarNumber(date.getSeconds()),
+      ].join("");
+    },
+    jalaliToGregorian(jalaliYear, jalaliMonth, jalaliDay) {
+      let year = jalaliYear - 979;
+      let dayNumber =
+        365 * year +
+        Math.floor(year / 33) * 8 +
+        Math.floor(((year % 33) + 3) / 4);
+      for (let month = 1; month < jalaliMonth; month++) {
+        dayNumber += month <= 6 ? 31 : 30;
+      }
+      dayNumber += jalaliDay - 1;
+
+      let gregorianDayNumber = dayNumber + 79;
+      let gregorianYear = 1600 + 400 * Math.floor(gregorianDayNumber / 146097);
+      gregorianDayNumber %= 146097;
+
+      let leap = true;
+      if (gregorianDayNumber >= 36525) {
+        gregorianDayNumber--;
+        gregorianYear += 100 * Math.floor(gregorianDayNumber / 36524);
+        gregorianDayNumber %= 36524;
+        if (gregorianDayNumber >= 365) gregorianDayNumber++;
+        else leap = false;
+      }
+
+      gregorianYear += 4 * Math.floor(gregorianDayNumber / 1461);
+      gregorianDayNumber %= 1461;
+      if (gregorianDayNumber >= 366) {
+        leap = false;
+        gregorianDayNumber--;
+        gregorianYear += Math.floor(gregorianDayNumber / 365);
+        gregorianDayNumber %= 365;
+      }
+
+      const monthDays = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      let gregorianMonth = 0;
+      while (
+        gregorianMonth < 12 &&
+        gregorianDayNumber >= monthDays[gregorianMonth]
+      ) {
+        gregorianDayNumber -= monthDays[gregorianMonth];
+        gregorianMonth++;
+      }
+
+      return new Date(
+        gregorianYear,
+        gregorianMonth,
+        gregorianDayNumber + 1
+      );
+    },
+    finalExamDate(exam) {
+      const sortValue = this.finalExamSortValue(exam);
+      const date = this.jalaliToGregorian(
+        sortValue[0],
+        sortValue[1],
+        sortValue[2]
+      );
+      date.setHours(sortValue[3], sortValue[4], 0, 0);
+      return date;
+    },
+    finalExamEndDate(exam) {
+      const timeParts = (exam.final_time || "")
+        .split("-")[1]
+        .trim()
+        .split(":")
+        .map((part) => convertPersianNumToEng(part));
+      const date = this.finalExamDate(exam);
+      date.setHours(timeParts[0] || 0, timeParts[1] || 0, 0, 0);
+      return date;
+    },
+    classStartDate(clickedDate, day, hour, minute) {
+      const date = new Date(clickedDate);
+      const daysUntilClass = (day - date.getDay() + 7) % 7;
+      date.setDate(date.getDate() + daysUntilClass);
+      date.setHours(hour, minute, 0, 0);
+      return date;
+    },
+    exportCalendar() {
+      const dayNames = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+      const dayNamesInPersian = [
+        "یکشنبه",
+        "دوشنبه",
+        "سهشنبه",
+        "چهارشنبه",
+        "پنجشنبه",
+        "جمعه",
+        "شنبه",
+      ];
+      const clickedDate = new Date();
+      const calendarEvents = [];
+      const addEvent = (lines) => {
+        calendarEvents.push("BEGIN:VEVENT", ...lines, "END:VEVENT");
+      };
+
+      this.selectedList.forEach((course, courseIndex) => {
+        const finalDate = this.finalExamDate(course);
+        course.seperated_time_and_place.forEach((classTime, classIndex) => {
+          const day = dayNamesInPersian.indexOf(classTime.day);
+          if (day === -1) return;
+
+          const start = this.classStartDate(
+            clickedDate,
+            day,
+            classTime.startHour,
+            classTime.startMinute
+          );
+          const end = new Date(start);
+          end.setHours(classTime.endHour, classTime.endMinute, 0, 0);
+          const lastClassDate = new Date(finalDate);
+          lastClassDate.setHours(0, 0, 0, 0);
+          lastClassDate.setDate(lastClassDate.getDate() - 1);
+
+          if (start > lastClassDate) return;
+          const lines = [
+            `UID:class-${course.id}-${courseIndex}-${classIndex}@sess-semester`,
+            `DTSTAMP:${this.formatCalendarDate(new Date())}`,
+            `DTSTART:${this.formatCalendarDate(start)}`,
+            `DTEND:${this.formatCalendarDate(end)}`,
+            `SUMMARY:${this.escapeCalendarText(course.title)}`,
+            `LOCATION:${this.escapeCalendarText(classTime.place)}`,
+            `DESCRIPTION:${this.escapeCalendarText(`استاد: ${course.teacher}`)}`,
+            `RRULE:FREQ=WEEKLY;BYDAY=${dayNames[day]};UNTIL=${this.formatCalendarDate(lastClassDate, true)}`,
+          ];
+          addEvent(lines);
+        });
+
+        const finalStart = this.finalExamDate(course);
+        const finalEnd = this.finalExamEndDate(course);
+        addEvent([
+          `UID:final-${course.id}-${courseIndex}@sess-semester`,
+          `DTSTAMP:${this.formatCalendarDate(new Date())}`,
+          `DTSTART:${this.formatCalendarDate(finalStart)}`,
+          `DTEND:${this.formatCalendarDate(finalEnd)}`,
+          `SUMMARY:${this.escapeCalendarText(`امتحان نهایی: ${course.title}`)}`,
+          `DESCRIPTION:${this.escapeCalendarText(`گروه: ${course.group}`)}`,
+        ]);
+      });
+
+      const calendar = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Sess Semester//Class Schedule//EN",
+        "CALSCALE:GREGORIAN",
+        "X-WR-CALNAME:برنامه کلاسی و امتحانات",
+        ...calendarEvents,
+        "END:VCALENDAR",
+      ].join("\r\n");
+      const blob = new Blob(["\ufeff", calendar], {
+        type: "text/calendar;charset=utf-8",
+      });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "class-schedule-and-finals.ics";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    },
     setDialogContent(item) {
       this.dialogContent.title = item.title;
       this.dialogContent.teacher = item.teacher;
@@ -1322,6 +1508,14 @@ export default {
 .screen-expanded {
   font-size: medium;
 }
+.results-heading {
+  position: relative;
+}
+.calendar-export-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
 .calenderShower {
   width: 100%;
   background: #ddd5;
@@ -1329,6 +1523,11 @@ export default {
   border-radius: 0.4rem;
 }
 @media screen and (max-width: 768px) {
+  .calendar-export-button {
+    position: static;
+    display: flex;
+    margin: 0 auto 1rem;
+  }
   .calenderShower {
     overflow-x: scroll;
   }
