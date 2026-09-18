@@ -658,9 +658,50 @@
                           </v-card-actions>
                         </v-card>
                       </v-menu>
+
                     </v-sheet>
+
                   </div>
                 </template>
+                <div class="text-center mt-4">
+                  <v-btn color="primary" @click="finalsDialogOpen = true">
+                    <v-icon left>mdi-calendar-check</v-icon>
+                    امتحانات نهایی دروس انتخاب شده
+                  </v-btn>
+                </div>
+
+                <v-dialog v-model="finalsDialogOpen" max-width="700">
+                  <v-card>
+                    <v-card-title class="grey lighten-2">
+                      امتحانات نهایی دروس انتخاب شده
+                    </v-card-title>
+                    <v-data-table
+                      :headers="finalTableHeaders"
+                      :items="finalExams"
+                      :items-per-page="-1"
+                      hide-default-footer
+                      class="finals-table"
+                    >
+                      <template v-slot:no-data>
+                        درسی انتخاب نشده است
+                      </template>
+                    </v-data-table>
+                    <v-card-actions>
+                      <v-spacer></v-spacer>
+                      <v-btn color="primary" text @click="exportFinalExams">
+                        <v-icon left>mdi-download</v-icon>
+                        خروجی متنی
+                      </v-btn>
+                      <v-btn
+                        color="primary"
+                        text
+                        @click="finalsDialogOpen = false"
+                      >
+                        بستن
+                      </v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-dialog>
               </div>
             </div>
             <v-spacer v-if="selectedList.length" class="my-8"><hr /></v-spacer>
@@ -812,6 +853,13 @@ export default {
       selectedEvent: {},
       selectedElement: null,
       selectedOpen: false,
+      finalsDialogOpen: false,
+      finalTableHeaders: [
+        { text: "نام درس", value: "title" },
+        { text: "تاریخ امتحان", value: "final_date" },
+        { text: "ساعت امتحان", value: "final_time" },
+        { text: "فاصله تا امتحان قبل", value: "study_gap" },
+      ],
       events: [],
       colors: [
         "#222831",
@@ -1021,6 +1069,70 @@ export default {
     getEventColor(event) {
       return event.color;
     },
+    finalExamSortValue(exam) {
+      const dateParts = (exam.final_date || "").split("/").map((part) =>
+        convertPersianNumToEng(part)
+      );
+      const timeStart = (exam.final_time || "")
+        .split("-")[0]
+        .trim()
+        .split(":")
+        .map((part) => convertPersianNumToEng(part));
+
+      return [
+        dateParts[0] || 0,
+        dateParts[1] || 0,
+        dateParts[2] || 0,
+        timeStart[0] || 0,
+        timeStart[1] || 0,
+      ];
+    },
+    finalExamTimestamp(exam) {
+      const sortValue = this.finalExamSortValue(exam);
+      const year = sortValue[0];
+      const month = sortValue[1];
+      const day = sortValue[2];
+      const daysInPreviousMonths = month <= 6 ? (month - 1) * 31 : 186 + (month - 7) * 30;
+
+      return (
+        year * 365 +
+        Math.floor((year * 8 + 21) / 33) +
+        daysInPreviousMonths +
+        day -
+        1
+      ) * 1440 + sortValue[3] * 60 + sortValue[4];
+    },
+    formatStudyGap(minutes) {
+      const days = Math.floor(minutes / 1440);
+      const hours = Math.floor((minutes % 1440) / 60);
+      const remainingMinutes = minutes % 60;
+      const parts = [];
+      if (days) parts.push(`${days} روز`);
+      if (hours) parts.push(`${hours} ساعت`);
+      if (remainingMinutes) parts.push(`${remainingMinutes} دقیقه`);
+      return parts.length ? parts.join(" و ") : "همان زمان";
+    },
+    exportFinalExams() {
+      const rows = [
+        "نام درس\tتاریخ امتحان\tساعت امتحان\tفاصله تا امتحان قبل",
+      ];
+      this.finalExams.forEach((exam) => {
+        rows.push(
+          [exam.title, exam.final_date, exam.final_time, exam.study_gap]
+            .map((value) => String(value || "").replace(/[\r\n\t]/g, " "))
+            .join("\t")
+        );
+      });
+
+      const blob = new Blob(["\ufeff", rows.join("\n")], {
+        type: "text/plain;charset=utf-8",
+      });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "final-exams.txt";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    },
     setDialogContent(item) {
       this.dialogContent.title = item.title;
       this.dialogContent.teacher = item.teacher;
@@ -1148,6 +1260,29 @@ export default {
       "getPlaces",
       "getGenders",
     ]),
+    finalExams() {
+      const sortedExams = this.selectedList.slice().sort((firstExam, secondExam) => {
+        const firstValue = this.finalExamSortValue(firstExam);
+        const secondValue = this.finalExamSortValue(secondExam);
+        for (let i = 0; i < firstValue.length; i++) {
+          if (firstValue[i] !== secondValue[i]) {
+            return firstValue[i] - secondValue[i];
+          }
+        }
+        return 0;
+      });
+
+      return sortedExams.map((exam, index) => ({
+        ...exam,
+        study_gap:
+          index === 0
+            ? "اولین امتحان"
+            : this.formatStudyGap(
+                this.finalExamTimestamp(exam) -
+                  this.finalExamTimestamp(sortedExams[index - 1])
+              ),
+      }));
+    },
   },
 };
 </script>

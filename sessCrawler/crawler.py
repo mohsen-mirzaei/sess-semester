@@ -48,7 +48,7 @@ def seperateTimeAndPlace(timeAndDate):
 def get_course_details():
     global Driver
     data = dict()
-    time.sleep(1)
+    time.sleep(1.5)
 
     data['title'] = arabicToPersian(Driver.find_element(By.ID,  'edName').text)
     data['vahed'] = Driver.find_element(By.ID,  'edTotalUnit').text
@@ -100,7 +100,7 @@ select_object = Select(select_element)
 all_obj_name = [arabicToPersian(string.text) for string in select_object.options[1:]]
 # select units 
 
-toCrawlIndexes = [1, 2, 3, 4, 6, 88, 89, 9, 10, 12, 18, 41, 74, 77, 78, 92, 68, 17]
+toCrawlIndexes = [1, 2] #, 3, 4, 6, 88, 89, 9, 75, 10, 12, 18, 41, 74, 77, 78, 92, 68, 17]
 
 for j in toCrawlIndexes:
     datas = dict()
