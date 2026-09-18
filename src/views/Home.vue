@@ -864,6 +864,7 @@ import {
 import { convertPersianNumToEng } from "../helpers/persianNumber_To_English";
 import { toFarsiNumber } from "../helpers/english_to_persian";
 import { teacherSearch } from "../helpers/teacherName";
+import calendarData from "../data/semester-calendar.json";
 export default {
   name: "Home",
   data() {
@@ -1300,6 +1301,12 @@ export default {
       date.setHours(hour, minute, 0, 0);
       return date;
     },
+    calendarDateFromJalali(dateText) {
+      const [year, month, day] = dateText
+        .split("/")
+        .map((part) => convertPersianNumToEng(part));
+      return this.jalaliToGregorian(year, month, day);
+    },
     exportCalendar() {
       const dayNames = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
       const dayNamesInPersian = [
@@ -1311,31 +1318,33 @@ export default {
         "جمعه",
         "شنبه",
       ];
-      const clickedDate = new Date();
+      const semesterStart = this.calendarDateFromJalali(
+        calendarData.semester.semester_start
+      );
+      const semesterEnd = this.calendarDateFromJalali(
+        calendarData.semester.semester_end
+      );
+      semesterEnd.setHours(23, 59, 59, 0);
       const calendarEvents = [];
       const addEvent = (lines) => {
         calendarEvents.push("BEGIN:VEVENT", ...lines, "END:VEVENT");
       };
 
       this.selectedList.forEach((course, courseIndex) => {
-        const finalDate = this.finalExamDate(course);
         course.seperated_time_and_place.forEach((classTime, classIndex) => {
           const day = dayNamesInPersian.indexOf(classTime.day);
           if (day === -1) return;
 
           const start = this.classStartDate(
-            clickedDate,
+            semesterStart,
             day,
             classTime.startHour,
             classTime.startMinute
           );
           const end = new Date(start);
           end.setHours(classTime.endHour, classTime.endMinute, 0, 0);
-          const lastClassDate = new Date(finalDate);
-          lastClassDate.setHours(0, 0, 0, 0);
-          lastClassDate.setDate(lastClassDate.getDate() - 1);
 
-          if (start > lastClassDate) return;
+          if (start > semesterEnd) return;
           const lines = [
             `UID:class-${course.id}-${courseIndex}-${classIndex}@sess-semester`,
             `DTSTAMP:${this.formatCalendarDate(new Date())}`,
@@ -1344,7 +1353,7 @@ export default {
             `SUMMARY:${this.escapeCalendarText(course.title)}`,
             `LOCATION:${this.escapeCalendarText(classTime.place)}`,
             `DESCRIPTION:${this.escapeCalendarText(`استاد: ${course.teacher}`)}`,
-            `RRULE:FREQ=WEEKLY;BYDAY=${dayNames[day]};UNTIL=${this.formatCalendarDate(lastClassDate, true)}`,
+            `RRULE:FREQ=WEEKLY;BYDAY=${dayNames[day]};UNTIL=${this.formatCalendarDate(semesterEnd, true)}`,
           ];
           addEvent(lines);
         });
